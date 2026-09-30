@@ -1,0 +1,21 @@
+{
+  "name": "project_pagsencilla",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Voice AI interviewer using the OpenAI Realtime API",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2"
+  }
+}

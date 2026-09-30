@@ -1,0 +1,17 @@
+# Dependencies (reinstall with `npm install`)
+node_modules/
+
+# Secrets - never commit real keys
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

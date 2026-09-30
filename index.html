@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Interviewer</title>
+    <link rel="icon" type="image/png" href="robotito_clean.png">
+    <style>
+        :root {
+            --color-primary-200: #f3a8a7;
+            --color-primary-500: #b91010;
+            --color-primary-600: #960505;
+            --primary-glow: rgba(185, 86, 16, 0.4);
+            
+            /* Main Theme */
+            --bg-light: #ffffff;
+            --text-main: #f8fafc;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-light);
+            background-image: #111827;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .background-container {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(2px);
+            opacity: 0.6;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* background: ; Glass effect 
+                    */
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            border-radius: 24px;
+            background: rgb(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 3px solid var(--color-primary-200);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: float-in 1s ease-out;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: #e69e7c;
+            border: 3px solid rgba(255,255,255,0.1);
+        }
+
+        p {
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        /* --- THE AVATAR & WAVE/LIQUID ANIMATION --- */
+        .avatar-section {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 30px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;        /* Prevents text highlighting */
+            -webkit-user-select: none; /* Safari support */
+            cursor: default;          /* Forces the arrow cursor, stops I-beam flicker */
+
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .avatar-circle {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(150, 5, 5, 0.9);
+            z-index: 2;
+            overflow: hidden;
+            border: 3px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+
+        .avatar-section.session-active {
+            transform: scale(1.3); 
+        }
+
+        #page-logo {
+            width: 90%;
+            height: 90%;
+            object-fit: cover;
+        }
+
+        /* The Wave Rings */
+        .wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110%;
+            height: 110%;
+            background: transparent;
+            
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none;
+            border-radius: 50%;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .speaking .avatar-circle {
+            animation: core-pulse 1.5s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(185, 16, 83, 0.3); /* Glow */
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+                border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            }
+            33% {
+                /* Distort shape */
+                border-radius: 65% 35% 70% 30% / 50% 70% 30% 50%;
+            }
+            66% {
+                /* Distort shape differently */
+                border-radius: 35% 65% 30% 70% / 70% 30% 70% 30%;
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+                border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            }
+        }
+
+        @keyframes core-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- BUTTONS --- */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        #startButton {
+            background-color: var(--color-primary-500);
+            color: #022c22; /* Dark green text */
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        #startButton:hover {
+            background-color: var(--color-primary-600);
+            transform: translateY(-2px);
+        }
+
+        #endButton {
+            background-color: rgba(239, 68, 68, 0.15); /* Red tint */
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        #endButton:hover {
+            background-color: rgba(239, 68, 68, 0.25);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes float-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .transcript-box {
+            width: 100%;
+            height: 250px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid var(--color-primary-200);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            box-sizing: border-box;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 0.95rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .transcript-box.session-active {
+            display: flex;
+        }
+
+        /* Scrollbar styling */
+        .transcript-box::-webkit-scrollbar { width: 6px; }
+        .transcript-box::-webkit-scrollbar-track { background: transparent; }
+        .transcript-box::-webkit-scrollbar-thumb { background: var(--color-primary-200); border-radius: 3px; }
+
+        /* Message Bubbles */
+        .msg-row { display: flex; width: 100%; }
+
+        .msg-candidate {
+            justify-content: flex-end;
+        }
+        .msg-candidate .bubble {
+            background: var(--color-primary-200);
+            color: #064e3b;
+            border-radius: 12px 12px 0 12px;
+        }
+
+        .msg-interviewer {
+            justify-content: flex-start;
+        }
+        .msg-interviewer .bubble {
+            background: #ffffff;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px 12px 12px 0;
+        }
+
+        .bubble {
+            padding: 8px 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            line-height: 1.4;
+        }
+        .bubble strong {
+            display: block;
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="avatar-section" id="avatarSection">            
+            <div class="avatar-circle">
+                <img src="robotito_clean.png" id="page-logo" alt="AI Agent" draggable="false">
+            </div>
+        </div>
+
+        <h1>HR Interviewer</h1>
+        <!-- TODO: CHANGE FOR USER NAME OR SOMETHING LIKE THAT -->
+        <p id="mainMessage">
+            Welcome. I’ll be interviewing you today.<br>
+            When you’re ready, click Start to begin and allow microphone access.
+        </p>
+
+        <div id="transcriptBox" class="transcript-box" hidden></div>
+        
+        <div class="wrapper">
+        <div class="controls">
+            <button id="startButton"> Start Session</button>
+            <button id="endButton" hidden> End Session</button>
+        </div>
+    </div>
+
+    <!--  element that actually plays the voice coming back from the AI. -->
+    <audio id="remoteAudio" autoplay></audio>
+    
+    <script id="rtc-logic">
+        const mainMessageEl = document.getElementById('mainMessage');
+        const transcriptBoxEl = document.getElementById('transcriptBox');
+        const avatarSection = document.getElementById('avatarSection');
+        const startButtonEl = document.getElementById('startButton');
+        const endButtonEl = document.getElementById('endButton');
+        const remoteAudioEl = document.getElementById('remoteAudio');
+        
+
+        // HARDCODED NUMBER
+        let endSessionTimer
+        let transcriptLog = []
+        let pc; // RTCPeerConnection
+        let dc; // Data channel
+        let audioTrack; // Local audio track
+        let assistantSpeaking = false; // Track if assistant is currently speaking
+
+        // Helper to get an element by ID
+        const $ = (id) => document.getElementById(id);
+
+         /**
+         * Send initial session instructions.
+         * This is called when the data channel is opened.
+         * @returns {void}
+         */
+        function sessionStartMessages() {
+            const startMessage = {
+                type: "response.create",
+            }
+            dc.send(JSON.stringify(startMessage));
+        }
+
+        /* Handle incoming DataChannel messages from the server. */
+        function handleMessage(event) {
+            const message = JSON.parse(event.data);
+            const itemId = message.item_id;
+
+            switch (message.type) {
+                case "session.created":
+                    const expiresAt = new Date(message?.session?.expires_at * 1000);
+                    console.log(`Session created and will expire at ${expiresAt}`, message);
+                    break;
+
+                case "conversation.item.input_audio_transcription.completed":
+                    transcriptLog.push({
+                        speaker: "Candidate", 
+                        text: message.transcript, 
+                        timestamp: new Date().toLocaleTimeString()
+                    });    
+                    appendMessage("Candidate", message.transcript);
+                    break;
+
+                case "response.done":
+                    const usage = message.response?.usage;
+                    if (usage) {
+                        const inputDetails = usage.input_token_details || {};
+                        const outputDetails = usage.output_token_details || {};
+                    }
+                    break;
+                
+                case "response.output_audio_transcript.done":
+                    if (message.transcript){
+                        transcriptLog.push({
+                            speaker: "Interviewer", 
+                            text: message.transcript,
+                            timestamp: new Date().toLocaleTimeString()
+                        });    
+                        appendMessage("Interviewer", message.transcript);
+                    }
+                    break;
+                
+                /* Handle Function Calling */
+                case "response.function_call_arguments.done":
+                    if (message.name === "on_question_flow_next") {
+                        console.log(`Moving to next Interview Step`);
+                    }
+                    if (message.name === "end_session") {
+                        console.log("Ending session based on user request");
+                        setTimeout(() => {
+                            endSession();
+                        }, 3_300);
+                    } 
+                    break;
+                
+                /* User Speech */
+                case "input_audio_buffer.speech_started":
+                    console.log("-- 🗣️ User started speaking");
+                    if (endSessionTimer){
+                        clearTimeout(endSessionTimer);
+                        console.log("endSessionTimer cleared");
+                    };
+                    break;
+
+                case "input_audio_buffer.speech_stopped":
+                    console.log("-- 🗣️ User ended speaking");
+                    break;
+                
+                /* Bot Speech */
+                case "output_audio_buffer.started":
+                    assistantSpeaking = true;
+                    console.log("-- 🤖 AI Speaking...");
+                    avatarSection.classList.add("speaking");
+                    break;
+
+                case "output_audio_buffer.stopped":
+                    assistantSpeaking = false;
+                    console.log("-- 🤖 AI Stopped.");
+                    avatarSection.classList.remove("speaking");
+                    break;
+                
+                /* Timeout set on session config */
+                case "input_audio_buffer.timeout_triggered":
+                    console.log("endSessionTimer triggered");
+                    // Create endSessionTimer to End Session if User is not speaking
+                    endSessionTimer = setTimeout(endSession, 70_000)
+                    break;
+            }
+        }
+
+        async function startSessionV2() {
+            startButtonEl.disabled = true;
+            startButtonEl.innerText = "Connecting...";
+            transcriptBoxEl.classList.add('session-active');
+
+            // Capture the local mic
+            let stream;
+            try {
+                // ASK FOR MIC PERMISSION!
+                stream = await navigator.mediaDevices.getUserMedia({audio: true});
+                if (!stream) {
+                    console.error("Failed to get local stream");
+                    return;
+                }
+                [audioTrack] = stream.getAudioTracks();
+            } catch (err) {
+                console.error("Error accessing mic:", err);
+                toggleSessionButtons(false);
+                return;
+            }
+
+            // Get a session token for OpenAI Realtime API
+            const tokenResponse = await fetch("http://localhost:3000/token");
+            const data = await tokenResponse.json();
+            const EPHEMERAL_KEY = data.value;
+            
+            // Start the WebRTC session
+            try {
+                // Create a peer connection
+                pc = new RTCPeerConnection();
+
+                // Set up to play remote audio from the model
+                pc.ontrack = (e) => (remoteAudioEl.srcObject = e.streams[0]);
+                if(audioTrack)
+                    pc.addTrack(audioTrack, stream);
+
+                // Set up data channel for sending and receiving events
+                dc = pc.createDataChannel("oai"); 
+
+                // Send session instructions upon opening the data channel
+                dc.addEventListener("open", () => sessionStartMessages());
+
+                // Handle incoming messages from the server
+                dc.addEventListener("message", handleMessage);
+
+                // Start the session using the Session Description Protocol (SDP)
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                // TODO: I AM NOT SENDING THE INSTRUCTIONS AGAIN
+                // I BELIEVE THIS IS MORE EFFICIENT IN TERMS OF COST?
+                const baseUrl = "https://api.openai.com/v1/realtime/calls";
+                const model = "gpt-realtime";
+                const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+                    method: "POST",
+                    body: offer.sdp,
+                    headers: {
+                        Authorization: `Bearer ${EPHEMERAL_KEY}`,
+                        "Content-Type": "application/sdp",
+                    },
+                });
+
+                const answerSdp = await sdpResponse.text();
+                await pc.setRemoteDescription({ type: "answer", sdp: answerSdp});
+
+                // Wait for connection to be established before proceeding
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(`Connection timeout. Current state: ${pc.connectionState}`), 10_000);
+                    pc.addEventListener("connectionstatechange", () => {
+                        if (pc.connectionState === "connected") {
+                            clearTimeout(timeout);
+                            console.log("Peer connection established!");
+                            resolve();
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error("Error starting session:", err);
+                if (pc?.connectionState !== "closed") {
+                    pc.close();
+                }
+                toggleSessionButtons(false);
+            }
+        }
+
+        /* End the current session */
+        async function endSession() {
+            console.log("╔ Ending session...");
+            avatarSection.classList.remove("speaking"); // Ensure waves stop
+            avatarSection.classList.remove("session-active"); // Force shrink
+
+            // Turn off mic
+            if (audioTrack && audioTrack.status !== "ended") {
+                audioTrack.stop();
+                audioTrack = null;
+            }
+
+            if (dc) {dc.close();}
+                        
+            // Close the WebRTC Connection
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            
+            // Update UI
+            console.log("╚ Session ended");
+            
+            // Hide BOTH buttons and show end msg
+            startButtonEl.hidden = true;
+            endButtonEl.hidden = true;
+            mainMessageEl.hidden = false;
+            document.getElementById("mainMessage").innerText = "Thank you for your responses. The interview is now complete.\n Your answers have been saved.";
+
+        }
+
+        /**
+         * Toggle the session control buttons based on the session state.
+         * @param {boolean} isSessionActive - Whether a session is currently active.
+         */
+        function toggleSessionButtons(isSessionActive) {
+            startButtonEl.hidden = isSessionActive;
+            endButtonEl.hidden = !isSessionActive;
+            startButtonEl.disabled = isSessionActive;
+            endButtonEl.disabled = !isSessionActive;
+            transcriptBoxEl.hidden = !isSessionActive;
+
+            // Toggle the size class
+            if (isSessionActive) {
+                // If session is active -> Grow
+                avatarSection.classList.add('session-active');
+            } else {
+                // If session is inactive -> Shrink
+                avatarSection.classList.remove('session-active');
+            }
+
+            mainMessageEl.hidden = isSessionActive;
+        }
+        
+        /* Appends a new bubble to the chat */
+        function appendMessage(speaker, text) {
+            const msgRow = document.createElement('div');
+            
+            msgRow.className = `msg-row ${speaker === 'Candidate' ? 'msg-candidate' : 'msg-interviewer'}`;
+            
+            msgRow.innerHTML = `
+                <div class="bubble">
+                    <strong>${speaker}</strong>
+                    ${text}
+                </div>
+            `;
+            
+            transcriptBoxEl.appendChild(msgRow);
+            
+            // Auto-scroll to bottom
+            transcriptBoxEl.scrollTop = transcriptBoxEl.scrollHeight;
+        }
+
+        // BUTTONS
+        // Button event handlers for starting / ending sessions
+        startButtonEl.addEventListener("click", async () => {
+            if (pc?.connectionState === "connected") {
+                console.log("Session already started");
+                return;
+            }
+            toggleSessionButtons(true);
+            await startSessionV2();
+        });
+
+        // End session button - cancel any in-progress response and close the session
+        endButtonEl.addEventListener("click", async () => {
+            console.log("User aborted session (REMOVE IN THE FUTURE).");
+            if (pc?.connectionState === "closed") {
+                console.log(`No session to end. Connection state: ${pc.connectionState}`);
+                return;
+            }
+            toggleSessionButtons(false);
+            // cancel any in-progress response - not needed for speech input due to turn detection
+            if(assistantSpeaking)
+                dc.send(JSON.stringify({type: "response.cancel"}));
+            await endSession();
+        });
+    </script>
+</body>
+</html>
+
